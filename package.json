@@ -1,0 +1,11 @@
+{
+  "name": "artify",
+  "version": "1.0.0",
+  "description": "Artify - Empowering local artisans with AI",
+  "scripts": {
+    "server": "npm run dev --prefix server",
+    "client": "npm run dev --prefix client",
+    "seed": "npm run db:seed --prefix server",
+    "db:push": "npx prisma db push --schema=server/prisma/schema.prisma"
+  }
+}
