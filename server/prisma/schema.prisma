@@ -1,0 +1,144 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextIndex"]
+}
+
+model User {
+  id          Int              @id @default(autoincrement())
+  firebaseUid String           @unique @map("firebase_uid") @db.VarChar(191)
+  phone       String           @unique @db.VarChar(50)
+  role        String           @default("artisan") @db.VarChar(20) // "artisan" | "admin"
+  uiLanguage  String           @default("hi") @map("ui_language") @db.VarChar(10)
+  createdAt   DateTime         @default(now()) @map("created_at")
+  profile     ArtisanProfile?
+  articles    Article[]
+
+  @@map("users")
+}
+
+model ArtisanProfile {
+  userId                Int      @id @map("user_id")
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  displayName           String   @map("display_name") @db.VarChar(150)
+  craftType             String?  @map("craft_type") @db.VarChar(100)
+  village               String?  @db.VarChar(100)
+  city                  String?  @db.VarChar(100)
+  state                 String?  @db.VarChar(100)
+  yearsExperience       Int?     @map("years_experience")
+  bio                   String?  @db.Text
+  photoUrl              String?  @map("photo_url") @db.VarChar(500)
+  whatsappNumber        String?  @map("whatsapp_number") @db.VarChar(50)
+  whatsappVerified      Boolean  @default(false) @map("whatsapp_verified")
+  whatsappPublicConsent Boolean  @default(false) @map("whatsapp_public_consent")
+  updatedAt             DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("artisan_profiles")
+}
+
+model Article {
+  id             Int              @id @default(autoincrement())
+  artisanId      Int              @map("artisan_id")
+  artisan        User             @relation(fields: [artisanId], references: [id], onDelete: Cascade)
+  status         String           @default("draft") @db.VarChar(20) // "draft" | "published"
+  title          String?          @db.VarChar(255)
+  tagline        String?          @db.VarChar(255)
+  category       String?          @db.VarChar(100)
+  priceInr       Decimal?         @map("price_inr") @db.Decimal(10, 2)
+  spokenLanguage String           @default("hi") @map("spoken_language") @db.VarChar(10) // "hi"|"pa"|"hne"|"mr"|"ta"
+  material       String?          @db.VarChar(255)
+  technique      String?          @db.VarChar(255)
+  dimensions     String?          @db.VarChar(100)
+  colors         String?          @db.VarChar(100)
+  timeToMake     String?          @map("time_to_make") @db.VarChar(100)
+  uses           String?          @db.Text
+  story          String?          @db.Text
+  care           String?          @db.Text
+  tags           Json?            // string array stored as JSON
+  heroImageId    Int?             @map("hero_image_id")
+  createdAt      DateTime         @default(now()) @map("created_at")
+  publishedAt    DateTime?        @map("published_at")
+
+  images         ArticleImage[]
+  transcripts    Transcript[]
+  descriptions   Description[]
+  whatsappClicks WhatsappClick[]
+  moderationFlags ModerationFlag[]
+
+  @@index([status, category, priceInr, publishedAt])
+  @@index([artisanId])
+  @@fulltext([title, tagline, material])
+  @@map("articles")
+}
+
+model ArticleImage {
+  id                 Int      @id @default(autoincrement())
+  articleId          Int      @map("article_id")
+  article            Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  originalUrl        String   @map("original_url") @db.VarChar(500)
+  enhancedUrl        String?  @map("enhanced_url") @db.VarChar(500)
+  cloudinaryPublicId String?  @map("cloudinary_public_id") @db.VarChar(255)
+  enhancementMethod  String   @default("none") @map("enhancement_method") @db.VarChar(50) // "sharp" | "sharp+gemini" | "none"
+  isHero             Boolean  @default(false) @map("is_hero")
+  position           Int      @default(0)
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  @@index([articleId])
+  @@map("article_images")
+}
+
+model Transcript {
+  id        Int      @id @default(autoincrement())
+  articleId Int      @map("article_id")
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  language  String   @db.VarChar(10)
+  text      String   @db.Text
+  confirmed Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([articleId])
+  @@map("transcripts")
+}
+
+model Description {
+  id        Int      @id @default(autoincrement())
+  articleId Int      @map("article_id")
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  language  String   @db.VarChar(10) // "en" | "hi" | "pa" | "mr" | "ta"
+  tone      String   @default("traditional") @db.VarChar(50) // "traditional" | "simple" | "premium"
+  title     String?  @db.VarChar(255)
+  tagline   String?  @db.VarChar(255)
+  body      String   @db.Text
+  version   Int      @default(1)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@unique([articleId, language])
+  @@index([articleId])
+  @@map("descriptions")
+}
+
+model WhatsappClick {
+  id        Int      @id @default(autoincrement())
+  articleId Int      @map("article_id")
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([articleId])
+  @@map("whatsapp_clicks")
+}
+
+model ModerationFlag {
+  id        Int      @id @default(autoincrement())
+  articleId Int      @map("article_id")
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  reason    String   @db.VarChar(255)
+  status    String   @default("pending") @db.VarChar(50)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([articleId])
+  @@map("moderation_flags")
+}

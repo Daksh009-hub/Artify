@@ -1,0 +1,21 @@
+{
+  "short_name": "Artify",
+  "name": "Artify - Empowering Local Artisans",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#F7F3E9",
+  "theme_color": "#C85A32",
+  "display": "standalone",
+  "orientation": "portrait"
+}
