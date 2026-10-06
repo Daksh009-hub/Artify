@@ -1,18 +1,19 @@
 datasource db {
-  provider = "sqlite"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextIndex"]
 }
 
 model User {
   id          Int              @id @default(autoincrement())
-  firebaseUid String           @unique @map("firebase_uid")
-  phone       String           @unique
-  role        String           @default("artisan") // "artisan" | "admin"
-  uiLanguage  String           @default("hi") @map("ui_language")
+  firebaseUid String           @unique @map("firebase_uid") @db.VarChar(191)
+  phone       String           @unique @db.VarChar(50)
+  role        String           @default("artisan") @db.VarChar(20) // "artisan" | "admin"
+  uiLanguage  String           @default("hi") @map("ui_language") @db.VarChar(10)
   createdAt   DateTime         @default(now()) @map("created_at")
   profile     ArtisanProfile?
   articles    Article[]
@@ -23,15 +24,15 @@ model User {
 model ArtisanProfile {
   userId                Int      @id @map("user_id")
   user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  displayName           String   @map("display_name")
-  craftType             String?  @map("craft_type")
-  village               String?
-  city                  String?
-  state                 String?
+  displayName           String   @map("display_name") @db.VarChar(150)
+  craftType             String?  @map("craft_type") @db.VarChar(100)
+  village               String?  @db.VarChar(100)
+  city                  String?  @db.VarChar(100)
+  state                 String?  @db.VarChar(100)
   yearsExperience       Int?     @map("years_experience")
-  bio                   String?
-  photoUrl              String?  @map("photo_url")
-  whatsappNumber        String?  @map("whatsapp_number")
+  bio                   String?  @db.Text
+  photoUrl              String?  @map("photo_url") @db.VarChar(500)
+  whatsappNumber        String?  @map("whatsapp_number") @db.VarChar(50)
   whatsappVerified      Boolean  @default(false) @map("whatsapp_verified")
   whatsappPublicConsent Boolean  @default(false) @map("whatsapp_public_consent")
   updatedAt             DateTime @default(now()) @updatedAt @map("updated_at")
@@ -43,21 +44,21 @@ model Article {
   id             Int              @id @default(autoincrement())
   artisanId      Int              @map("artisan_id")
   artisan        User             @relation(fields: [artisanId], references: [id], onDelete: Cascade)
-  status         String           @default("draft") // "draft" | "published"
-  title          String?
-  tagline        String?
-  category       String?
-  priceInr       Decimal?         @map("price_inr")
-  spokenLanguage String           @default("hi") @map("spoken_language") // "hi"|"pa"|"hne"|"mr"|"ta"
-  material       String?
-  technique      String?
-  dimensions     String?
-  colors         String?
-  timeToMake     String?          @map("time_to_make")
-  uses           String?
-  story          String?
-  care           String?
-  tags           String?          // JSON string array for sqlite compatibility
+  status         String           @default("draft") @db.VarChar(20) // "draft" | "published"
+  title          String?          @db.VarChar(255)
+  tagline        String?          @db.VarChar(255)
+  category       String?          @db.VarChar(100)
+  priceInr       Decimal?         @map("price_inr") @db.Decimal(10, 2)
+  spokenLanguage String           @default("hi") @map("spoken_language") @db.VarChar(10) // "hi"|"pa"|"hne"|"mr"|"ta"
+  material       String?          @db.VarChar(255)
+  technique      String?          @db.VarChar(255)
+  dimensions     String?          @db.VarChar(100)
+  colors         String?          @db.VarChar(100)
+  timeToMake     String?          @map("time_to_make") @db.VarChar(100)
+  uses           String?          @db.Text
+  story          String?          @db.Text
+  care           String?          @db.Text
+  tags           Json?            // string array stored as JSON
   heroImageId    Int?             @map("hero_image_id")
   createdAt      DateTime         @default(now()) @map("created_at")
   publishedAt    DateTime?        @map("published_at")
@@ -70,6 +71,7 @@ model Article {
 
   @@index([status, category, priceInr, publishedAt])
   @@index([artisanId])
+  @@fulltext([title, tagline, material])
   @@map("articles")
 }
 
@@ -77,10 +79,10 @@ model ArticleImage {
   id                 Int      @id @default(autoincrement())
   articleId          Int      @map("article_id")
   article            Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
-  originalUrl        String   @map("original_url")
-  enhancedUrl        String?  @map("enhanced_url")
-  cloudinaryPublicId String?  @map("cloudinary_public_id")
-  enhancementMethod  String   @default("none") @map("enhancement_method") // "sharp" | "sharp+gemini" | "none"
+  originalUrl        String   @map("original_url") @db.VarChar(500)
+  enhancedUrl        String?  @map("enhanced_url") @db.VarChar(500)
+  cloudinaryPublicId String?  @map("cloudinary_public_id") @db.VarChar(255)
+  enhancementMethod  String   @default("none") @map("enhancement_method") @db.VarChar(50) // "sharp" | "sharp+gemini" | "none"
   isHero             Boolean  @default(false) @map("is_hero")
   position           Int      @default(0)
   createdAt          DateTime @default(now()) @map("created_at")
@@ -93,8 +95,8 @@ model Transcript {
   id        Int      @id @default(autoincrement())
   articleId Int      @map("article_id")
   article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
-  language  String
-  text      String
+  language  String   @db.VarChar(10)
+  text      String   @db.Text
   confirmed Boolean  @default(false)
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -106,11 +108,11 @@ model Description {
   id        Int      @id @default(autoincrement())
   articleId Int      @map("article_id")
   article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
-  language  String   // "en" | "hi" | "pa" | "mr" | "ta"
-  tone      String   @default("traditional") // "traditional" | "simple" | "premium"
-  title     String?
-  tagline   String?
-  body      String
+  language  String   @db.VarChar(10) // "en" | "hi" | "pa" | "mr" | "ta"
+  tone      String   @default("traditional") @db.VarChar(50) // "traditional" | "simple" | "premium"
+  title     String?  @db.VarChar(255)
+  tagline   String?  @db.VarChar(255)
+  body      String   @db.Text
   version   Int      @default(1)
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
@@ -133,8 +135,8 @@ model ModerationFlag {
   id        Int      @id @default(autoincrement())
   articleId Int      @map("article_id")
   article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
-  reason    String
-  status    String   @default("pending")
+  reason    String   @db.VarChar(255)
+  status    String   @default("pending") @db.VarChar(50)
   createdAt DateTime @default(now()) @map("created_at")
 
   @@index([articleId])

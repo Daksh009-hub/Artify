@@ -532,7 +532,7 @@ export async function seedDatabase() {
         uses: item.article.uses,
         story: item.article.story,
         care: item.article.care,
-        tags: item.article.tags,
+        tags: JSON.stringify(item.article.tags),
         images: {
           create: item.article.images.map(img => ({
             originalUrl: img.originalUrl,

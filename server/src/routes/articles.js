@@ -354,7 +354,7 @@ router.put('/:id/details', async (req, res, next) => {
         ...(uses !== undefined && { uses }),
         ...(story !== undefined && { story }),
         ...(care !== undefined && { care }),
-        ...(tags !== undefined && { tags: Array.isArray(tags) ? tags : [] })
+        ...(tags !== undefined && { tags: typeof tags === 'string' ? tags : JSON.stringify(tags || []) })
       }
     });
 
